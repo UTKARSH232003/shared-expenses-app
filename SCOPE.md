@@ -62,7 +62,7 @@ Rows are staged, **not inserted**. A row becomes a real Expense or Settlement on
 
 ## 2. Database Schema (PostgreSQL)
 
-Relational only. ORM: Prisma. `jsonb` is used **only** in the import-staging tables to hold raw/normalized row payloads; all committed financial data lives in fully normalized relational tables.
+Relational only. Data access is **hand-written, parameterized SQL via `node-postgres` (`pg`) — no ORM**; the schema is maintained as plain `.sql` files. `jsonb` is used **only** in the import-staging tables to hold raw/normalized row payloads; all committed financial data lives in fully normalized relational tables.
 
 ### 2.1 Entity overview
 
