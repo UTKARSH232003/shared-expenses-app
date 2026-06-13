@@ -196,11 +196,31 @@ curl -s -X POST localhost:4000/api/auth/register -H 'Content-Type: application/j
 
 ---
 
+## API endpoints
+
+| Area | Endpoints |
+|---|---|
+| Auth | `POST /api/auth/register` · `POST /api/auth/login` · `GET /api/auth/me` |
+| Groups | `POST /api/groups` · `GET /api/groups` · `GET /api/groups/:id` |
+| Members | `GET /api/groups/:id/members` · `POST /api/groups/:id/members` · `PATCH /api/groups/:id/members/:memberId` |
+| Expenses | `POST /api/groups/:id/expenses` · `GET /api/groups/:id/expenses` · `GET /api/expenses/:id` |
+| Settlements | `POST /api/groups/:id/settlements` · `GET /api/groups/:id/settlements` |
+| Balances | `GET /api/groups/:id/balances` · `GET /api/groups/:id/balances/simplified` · `GET /api/groups/:id/members/:memberId/balance` |
+
+Expenses support all four split types (`equal`, `unequal`, `percentage`, `share`),
+multi-currency conversion (USD→base via `exchange_rates`), refunds, and reject
+participants outside their `[joined_at, left_at]` membership window.
+
+**Run the full backend flow end-to-end** (server must be running):
+```bash
+node scripts/smoke.mjs   # creates a group, all split types, USD, refund, settlement, balances
+```
+
 ## Project status
 
 - [x] Auth — register / login / me (JWT + bcrypt)
-- [ ] Groups + time-bounded membership
-- [ ] Expenses + split types
-- [ ] Balances + settlements
+- [x] Groups + time-bounded membership
+- [x] Expenses + all four split types + multi-currency + refunds
+- [x] Settlements + balances (net, simplified, itemized)
 - [ ] CSV import + anomaly report
 - [ ] Frontend (`client/`)
