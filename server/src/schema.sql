@@ -99,6 +99,48 @@ CREATE TABLE IF NOT EXISTS settlements (
   CONSTRAINT fk_settle_to    FOREIGN KEY (to_member)   REFERENCES group_members(id)
 );
 
+-- One CSV import. Nothing financial is real until status = 'committed'.
+CREATE TABLE IF NOT EXISTS imports (
+  id           CHAR(36) NOT NULL PRIMARY KEY,
+  group_id     CHAR(36) NOT NULL,
+  filename     VARCHAR(255) NULL,
+  status       ENUM('reviewing','committed','aborted') NOT NULL DEFAULT 'reviewing',
+  created_by   CHAR(36) NOT NULL,
+  created_at   TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  committed_at TIMESTAMP NULL,
+  CONSTRAINT fk_import_group FOREIGN KEY (group_id)   REFERENCES `groups`(id) ON DELETE CASCADE,
+  CONSTRAINT fk_import_user  FOREIGN KEY (created_by) REFERENCES users(id)
+);
+
+-- One staged row per CSV line. raw/normalized/resolution are JSON payloads.
+CREATE TABLE IF NOT EXISTS import_rows (
+  id          CHAR(36) NOT NULL PRIMARY KEY,
+  import_id   CHAR(36) NOT NULL,
+  line_number INT      NOT NULL,
+  raw         JSON     NOT NULL,
+  normalized  JSON     NULL,
+  status      ENUM('clean','auto_resolved','needs_review','approved','rejected') NOT NULL,
+  target_kind ENUM('expense','settlement','dropped') NULL,
+  resolution  JSON     NULL,
+  committed_ref CHAR(36) NULL,
+  created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_irow_import FOREIGN KEY (import_id) REFERENCES imports(id) ON DELETE CASCADE
+);
+
+-- The detected anomalies per staged row — this is what the Import Report lists.
+CREATE TABLE IF NOT EXISTS import_anomalies (
+  id               CHAR(36) NOT NULL PRIMARY KEY,
+  import_row_id    CHAR(36) NOT NULL,
+  type             VARCHAR(40) NOT NULL,
+  severity         ENUM('info','warning','blocker') NOT NULL,
+  description      VARCHAR(500) NOT NULL,
+  suggested_action VARCHAR(255) NOT NULL,
+  requires_review  BOOLEAN NOT NULL DEFAULT FALSE,
+  chosen_action    VARCHAR(255) NULL,
+  created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_anom_row FOREIGN KEY (import_row_id) REFERENCES import_rows(id) ON DELETE CASCADE
+);
+
 -- Seed the fixed USD->INR fallback rate (idempotent via fixed PK + INSERT IGNORE).
 INSERT IGNORE INTO exchange_rates (id, base_currency, quote_currency, rate, rate_date, source)
 VALUES ('00000000-0000-0000-0000-000000000001', 'USD', 'INR', 83.000000, NULL, 'fixed');
